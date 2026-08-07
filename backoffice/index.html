@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GDR Quinta Nova — Back Office</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#111;background:#f5f6f8}
+body{margin:0}
+header{padding:18px 20px;background:#fff;border-bottom:1px solid #ddd;position:sticky;top:0}
+main{padding:20px;max-width:1100px;margin:auto}
+.card{background:#fff;border:1px solid #ddd;border-radius:14px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.kpi{font-size:28px;font-weight:700}.muted{color:#666;font-size:13px}
+button,input{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid #bbb}
+button{cursor:pointer}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hidden{display:none}
+.badge{display:inline-block;padding:4px 8px;border:1px solid #ccc;border-radius:999px;font-size:12px}
+ul{padding-left:18px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:14px}
+</style>
+</head>
+<body>
+<header><strong>GDR Quinta Nova — Back Office</strong> <span class="badge">v1 autónomo</span></header>
+<main>
+<section id="login" class="card">
+<h2>Entrar</h2>
+<div class="row">
+<input id="code" placeholder="Código do operador" autocomplete="username">
+<input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
+<button id="loginBtn">Entrar</button>
+</div>
+<p id="loginMsg" class="muted"></p>
+</section>
+
+<section id="app" class="hidden">
+<div class="row" style="justify-content:space-between;margin-bottom:16px">
+<div><strong id="who"></strong><div class="muted" id="generated"></div></div>
+<div class="row"><button id="refreshBtn">Atualizar</button><button id="logoutBtn">Sair</button></div>
+</div>
+
+<div class="grid">
+<div class="card"><div class="muted">Vendas hoje</div><div id="kpiSales" class="kpi">—</div></div>
+<div class="card"><div class="muted">Dinheiro hoje</div><div id="kpiCash" class="kpi">—</div></div>
+<div class="card"><div class="muted">MB Way hoje</div><div id="kpiMbway" class="kpi">—</div></div>
+<div class="card"><div class="muted">Contas a receber</div><div id="kpiRecv" class="kpi">—</div></div>
+</div>
+
+<div class="card">
+<h3>Ações prioritárias</h3>
+<ul id="actions"></ul>
+</div>
+
+<div class="card">
+<h3>Caixa</h3>
+<div id="cashState"></div>
+</div>
+
+<div class="card">
+<h3>Últimas vendas</h3>
+<table><thead><tr><th>N.º</th><th>Cliente</th><th>Total</th><th>Estado</th></tr></thead><tbody id="salesRows"></tbody></table>
+</div>
+
+<div class="card">
+<h3>Fornecedores / Faturas</h3>
+<div id="invoiceSummary"></div>
+</div>
+</section>
+</main>
+<script>
+const API="https://cxymfqaokexihupbphur.supabase.co/functions/v1/pos_backoffice_api";
+let token=sessionStorage.getItem("bo_token")||"";
+const eur=v=>new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(Number(v||0));
+async function call(action,payload={}) {
+  const r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action,token,...payload})});
+  const j=await r.json().catch(()=>({error:"Resposta inválida"}));
+  if(!r.ok) throw new Error(j.error||("HTTP "+r.status));
+  return j;
+}
+async function load(){
+  const d=await call("dashboard");
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("who").textContent=(d.meta?.operator||"Administrador")+" — "+(d.meta?.organization||"GDR Quinta Nova");
+  document.getElementById("generated").textContent="Atualizado: "+new Date(d.meta?.generated_at||Date.now()).toLocaleString("pt-PT");
+  document.getElementById("kpiSales").textContent=eur(d.summary?.today_sales_total);
+  document.getElementById("kpiCash").textContent=eur(d.summary?.today_cash);
+  document.getElementById("kpiMbway").textContent=eur(d.summary?.today_mbway);
+  document.getElementById("kpiRecv").textContent=eur(d.summary?.receivables_total);
+  const a=d.action_queue||[];
+  document.getElementById("actions").innerHTML=a.length?a.map(x=>"<li><strong>"+(x.title||x.code)+"</strong> — "+(x.count??"")+(x.detail?": "+x.detail:"")+"</li>").join(""):"<li>Sem ações prioritárias.</li>";
+  const c=d.cash||{};
+  document.getElementById("cashState").textContent="Estado: "+(c.status||"—")+(c.expected_cash!=null?" · Esperado: "+eur(c.expected_cash):"");
+  const sales=d.sales||[];
+  document.getElementById("salesRows").innerHTML=sales.slice(0,10).map(s=>"<tr><td>"+(s.official_number??"—")+"</td><td>"+(s.customer||"—")+"</td><td>"+eur(s.total_amount)+"</td><td>"+(s.operational_status||"—")+"</td></tr>").join("");
+  const inv=d.invoices?.summary||{};
+  document.getElementById("invoiceSummary").textContent="Documentos: "+(inv.documents_count??0)+" · Não pagos: "+(inv.unpaid_count??0)+" · Total não pago: "+eur(inv.unpaid_total);
+}
+document.getElementById("loginBtn").onclick=async()=>{
+  const msg=document.getElementById("loginMsg"); msg.textContent="";
+  try{
+    const j=await call("login",{operator_code:document.getElementById("code").value,pin:document.getElementById("pin").value});
+    token=j.token; sessionStorage.setItem("bo_token",token); await load();
+  }catch(e){msg.textContent=e.message}
+};
+document.getElementById("refreshBtn").onclick=()=>load().catch(e=>alert(e.message));
+document.getElementById("logoutBtn").onclick=async()=>{try{await call("logout")}catch{} sessionStorage.removeItem("bo_token"); token=""; location.reload()};
+if(token) load().catch(()=>{sessionStorage.removeItem("bo_token");token=""});
+</script>
+</body></html>
