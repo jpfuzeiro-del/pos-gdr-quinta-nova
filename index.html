@@ -251,5 +251,10 @@ shareCurrent=function(kind){if(!currentShare){showPugNotice('Não existe conta p
 confirmPhoneEntry=function(){const p=phoneInput.value.trim();if(!p||String(p).replace(/\D/g,'').length<9){showPugNotice('Indica um número de telefone válido.','Telefone','!');return}phoneModal.classList.add('hidden');const kind=_pendingShareKind;_pendingShareKind=null;currentShare.phone=p;if(kind)launchShare(kind,p);if(currentShare.customerId)rpc('pos_front_update_customer_phone',{p_token:token,p_customer:currentShare.customerId,p_phone:p}).then(r=>{if(r?.phone)currentShare.phone=r.phone}).catch(()=>{});const r=_phoneResolve;_phoneResolve=null;if(r)r(p)};
 cancelPhoneEntry=function(){phoneModal.classList.add('hidden');_pendingShareKind=null;const r=_phoneResolve;_phoneResolve=null;if(r)r(null)};
 
+/* ===== PUG: telefone editável antes de partilhar ===== */
+const _shareEditablePhoneMarker=true;
+function openEditableSharePhone(kind){_pendingShareKind=kind;const p=currentShare?.phone||'';phoneInput.value=p;const panel=phoneInput.closest('.panel');if(panel){const h=panel.querySelector('h2');if(h)h.textContent='Telefone do cliente';const sub=panel.querySelector('.sub');if(sub)sub.textContent='Confirma ou corrige o número antes de enviar. O número fica associado ao cliente.'}phoneModal.classList.remove('hidden');setTimeout(()=>{phoneInput.focus();phoneInput.select?.()},50)}
+shareCurrent=function(kind){if(!currentShare){showPugNotice('Não existe conta preparada para enviar.','Enviar conta','!');return}openEditableSharePhone(kind)};
+confirmPhoneEntry=function(){const p=phoneInput.value.trim();if(!p||String(p).replace(/\D/g,'').length<9){showPugNotice('Indica um número de telefone válido.','Telefone','!');return}phoneModal.classList.add('hidden');const kind=_pendingShareKind;_pendingShareKind=null;currentShare.phone=p;if(currentShare.customerId){rpc('pos_front_update_customer_phone',{p_token:token,p_customer:currentShare.customerId,p_phone:p}).then(r=>{if(r?.phone)currentShare.phone=r.phone}).catch(()=>{})}if(kind)launchShare(kind,p);const r=_phoneResolve;_phoneResolve=null;if(r)r(p)};
 if(token)load();
 </script></body></html>
