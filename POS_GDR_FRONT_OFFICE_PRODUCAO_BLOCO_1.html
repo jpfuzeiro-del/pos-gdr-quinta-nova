@@ -240,5 +240,16 @@ renderAccountMode=function(){
 };
 requestInvoice=function(){showPugNotice('Pedido de fatura assinalado. A emissão será concluída no Back Office apenas quando o cliente a solicitar.','Fatura','🧾')};
 
+/* ===== PUG: partilha nativa + guarda anti-duplicação ===== */
+const _shareNativeGuardMarker=true;
+let _voiceCommitBusy=false,_pendingShareKind=null;
+const _registerVoiceItemsGuardBase=registerVoiceItems;
+registerVoiceItems=async function(saleId){if(_voiceCommitBusy)return;_voiceCommitBusy=true;const btn=document.getElementById('voiceConfirmBtn');if(btn){btn.disabled=true;btn.textContent='A registar…'}try{return await _registerVoiceItemsGuardBase(saleId)}finally{_voiceCommitBusy=false;if(btn&&document.body.contains(btn)){btn.disabled=false;btn.textContent='Confirmar e registar tudo'}}};
+function normalizeShareNumber(kind,phone){let n=String(phone||'').replace(/[^0-9+]/g,'');if(kind==='whatsapp'){n=n.replace(/^\+/,'');if(/^9\d{8}$/.test(n))n='351'+n}return n}
+function launchShare(kind,phone){if(!currentShare?.text){showPugNotice('Não existe conta preparada para enviar.','Enviar conta','!');return}const n=normalizeShareNumber(kind,phone);if(!n){showPugNotice('Telefone inválido.','Enviar conta','!');return}const encoded=encodeURIComponent(currentShare.text);const href=kind==='whatsapp'?`https://wa.me/${n}?text=${encoded}`:`sms:${n}?body=${encoded}`;const a=document.createElement('a');a.href=href;a.rel='noopener';if(kind==='whatsapp')a.target='_blank';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),0)}
+shareCurrent=function(kind){if(!currentShare){showPugNotice('Não existe conta preparada para enviar.','Enviar conta','!');return}if(currentShare.phone){launchShare(kind,currentShare.phone);return}_pendingShareKind=kind;phoneInput.value='';phoneModal.classList.remove('hidden');setTimeout(()=>phoneInput.focus(),50)};
+confirmPhoneEntry=function(){const p=phoneInput.value.trim();if(!p||String(p).replace(/\D/g,'').length<9){showPugNotice('Indica um número de telefone válido.','Telefone','!');return}phoneModal.classList.add('hidden');const kind=_pendingShareKind;_pendingShareKind=null;currentShare.phone=p;if(kind)launchShare(kind,p);if(currentShare.customerId)rpc('pos_front_update_customer_phone',{p_token:token,p_customer:currentShare.customerId,p_phone:p}).then(r=>{if(r?.phone)currentShare.phone=r.phone}).catch(()=>{});const r=_phoneResolve;_phoneResolve=null;if(r)r(p)};
+cancelPhoneEntry=function(){phoneModal.classList.add('hidden');_pendingShareKind=null;const r=_phoneResolve;_phoneResolve=null;if(r)r(null)};
+
 if(token)load();
 </script></body></html>
