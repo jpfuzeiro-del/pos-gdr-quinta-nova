@@ -51,7 +51,7 @@ if(typeof suppliers==='function'){const suppliersBase=suppliers;suppliers=functi
 </style><script>
 (function(){
 const REAL_LOGO='/pos-gdr-quinta-nova/assets/gdr-quinta-nova-logo.png';
-const route=m=>'?view='+encodeURIComponent(m)+'&r=4';
+const route=m=>'?view='+encodeURIComponent(m)+'&r=5';
 function ensureLogo(){const brand=document.querySelector('.boBrand');if(brand&&!brand.querySelector('.ps-real-logo')){const im=document.createElement('img');im.className='ps-real-logo';im.src=REAL_LOGO;im.alt='GDR Quinta Nova';brand.prepend(im)}const login=document.querySelector('.boLogin');if(login&&!login.querySelector('.ps-login-logo')){const im=document.createElement('img');im.className='ps-login-logo';im.src=REAL_LOGO;im.alt='GDR Quinta Nova';login.prepend(im)}}
 function lbl(c){return({draft_sales:'Contas em preparação',products_without_price:'Produtos sem preço',expense_configuration_issues:'Despesas por configurar',unpaid_supplier_invoices:'Faturas de fornecedores por pagar',draft_stock_count:'Inventário em curso',open_shortages:'Faltas registadas',cash_open:'Caixa aberta'}[c]||String(c||'Atenção').replaceAll('_',' '))}
 function target(c){return({cash_open:'cash',draft_sales:'sales_accounts',products_without_price:'products',expense_configuration_issues:'expenses',unpaid_supplier_invoices:'suppliers_invoices_purchases',draft_stock_count:'stock',open_shortages:'stock'}[c]||'dashboard')}
@@ -60,6 +60,7 @@ function renderPonto(d){const s=d.summary||d.kpis||{},cash=d.cash||{},q=(d.actio
 try{mods[0][1]='Ponto de Situação'}catch{}
 try{dashboard=renderPonto}catch{}
 async function applyRoute(){let v=new URLSearchParams(location.search).get('view')||'dashboard';if(!token)return;if(v==='dashboard')return;if(v==='cash'){try{const j=await api('dashboard');const d=j.dashboard||j;cashView(d.cash||{});current='dashboard';if(typeof navBuild==='function')navBuild()}catch(e){setStatus(e.message,true)}return}const allowed=['sales_accounts','products','suppliers_invoices_purchases','expenses','stock','operators'];if(!allowed.includes(v))return;try{current=v;if(typeof navBuild==='function')navBuild();if(typeof load==='function')await load()}catch(e){setStatus(e.message,true)}}
-const obs=new MutationObserver(()=>{ensureLogo();document.querySelectorAll('.boBackBtn').forEach(b=>{if(/Dashboard|Ponto de Situação/.test(b.textContent))b.textContent='← Voltar ao Ponto de Situação'})});obs.observe(document.documentElement,{subtree:true,childList:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{ensureLogo();setTimeout(applyRoute,80)});else{ensureLogo();setTimeout(applyRoute,80)}
+const desiredBack='← Voltar ao Ponto de Situação';
+const obs=new MutationObserver(()=>{ensureLogo();document.querySelectorAll('.boBackBtn').forEach(b=>{const t=(b.textContent||'').trim();if((t==='← Voltar ao Dashboard'||t==='← Voltar ao Ponto de Situação')&&t!==desiredBack)b.textContent=desiredBack})});obs.observe(document.documentElement,{subtree:true,childList:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{ensureLogo();setTimeout(applyRoute,80)});else{ensureLogo();setTimeout(applyRoute,80)}
 })();
 </script><!-- PUG_PONTO_OVERRIDE_END --></body></html>
