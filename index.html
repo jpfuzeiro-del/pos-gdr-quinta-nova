@@ -315,4 +315,27 @@ function cancelStockBasket(){pugStockBasket=[];pugStockBasketBeneficiary=null;pu
 async function confirmStockBasket(){if(!pugStockMode||!pugStockBasket.length)return;let beneficiary=null;if(pugStockMode==='internal_consumption'&&/gon[cç]alo/i.test(String(data?.operator?.name||''))){const sel=document.getElementById('stockBasketBeneficiary');beneficiary=sel?.value||pugStockBasketBeneficiary||null}const payload=pugStockBasket.map(x=>({product_id:x.product.id,quantity:Number(x.quantity)}));const action=pugStockMode;try{const r=await rpc('pos_front_stock_action_batch',{p_token:token,p_action:action,p_items:payload,p_beneficiary_operator:beneficiary});if(Number(r?.items_registered)!==payload.length)throw new Error('registo_incompleto');const label=action==='offer'?'Oferta':'Consumo próprio';pugStockBasket=[];pugStockBasketBeneficiary=null;pugStockMode=null;setStockActionMode(null);renderStockBasket();showPugNotice(label+' registado: '+payload.length+' produto(s).')}catch(e){showPugNotice('Não foi possível registar: '+(e.message||e))}}
 setTimeout(renderStockBasket,0);
 </script>
+
+<script>
+/* PUG_STOCK_FINISH_HOME_NO_NOTICE_V1 */
+async function confirmStockBasket(){
+ if(!pugStockMode||!pugStockBasket.length)return;
+ let beneficiary=null;
+ if(pugStockMode==='internal_consumption'&&/gon[cç]alo/i.test(String(data?.operator?.name||''))){const sel=document.getElementById('stockBasketBeneficiary');beneficiary=sel?.value||pugStockBasketBeneficiary||null}
+ const payload=pugStockBasket.map(x=>({product_id:x.product.id,quantity:Number(x.quantity)}));
+ const action=pugStockMode;
+ try{
+   const r=await rpc('pos_front_stock_action_batch',{p_token:token,p_action:action,p_items:payload,p_beneficiary_operator:beneficiary});
+   if(Number(r?.items_registered)!==payload.length)throw new Error('registo_incompleto');
+   pugStockBasket=[];pugStockBasketBeneficiary=null;pugStockMode=null;
+   const ob=document.getElementById('offerModeBtn'),ib=document.getElementById('ownModeBtn'),n=document.getElementById('stockModeNote'),sub=document.getElementById('accountSub');
+   if(ob)ob.classList.remove('active');if(ib)ib.classList.remove('active');if(n)n.textContent='';
+   if(sub&&!activeAccount){sub.textContent='Nenhuma conta selecionada';sub.classList.add('no-account')}
+   renderStockBasket();
+   activeCategory=null;
+   if(typeof showFamilies==='function')showFamilies();
+   window.scrollTo({top:0,behavior:'smooth'});
+ }catch(e){showPugNotice('Não foi possível registar: '+(e.message||e))}
+}
+</script>
 </body></html>
