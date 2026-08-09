@@ -472,4 +472,35 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
 
 
 <!-- PUG_ROLLBACK_ADD_PRODUCT_DIRECT_FINAL_V1 -->
+
+<script>
+/* PUG_CONSOLIDATED_ADDPRODUCT_V2 */
+(function(){
+ async function resolveNormalSale(){
+   if(activeAccount&&activeAccount.id)return activeAccount;
+   try{if(typeof recoverSelectedAccount==='function'){const a=await recoverSelectedAccount();if(a&&a.id){activeAccount=a;return a}}}catch(_){}
+   return null;
+ }
+ async function consolidatedAddProduct(id){
+   if(typeof pugStockMode!=='undefined'&&pugStockMode){
+     if(typeof addStockBasketProduct==='function')return addStockBasketProduct(id);
+     if(typeof openStockActionForProduct==='function')return openStockActionForProduct(id);
+   }
+   if(typeof requireOpenCash==='function'&&!requireOpenCash())return;
+   const a=await resolveNormalSale();
+   if(!a){if(typeof showPugNotice==='function')showPugNotice('Seleciona um cliente antes de registar.');return}
+   const saleId=String(a.id);
+   const before={...a,lines:Array.isArray(a.lines)?[...a.lines]:[]};
+   await rpc('pos_front_add_item',{p_token:token,p_sale:saleId,p_product:id,p_quantity:1});
+   await load();
+   let current=(data.accounts||[]).find(x=>String(x.id)===saleId);
+   if(!current){current=before;if(!(data.accounts||[]).some(x=>String(x.id)===saleId))data.accounts.unshift(current)}
+   activeAccount=current;catalogExpanded=true;
+   try{closeModal('clientsModal')}catch(_){}try{closeModal('accountsModal')}catch(_){}
+   try{renderAccounts()}catch(_){}try{renderCart()}catch(_){}try{renderAccountMode()}catch(_){}
+   try{if(activeCategory)selectCategory(activeCategory);else showFamilies()}catch(_){}
+ }
+ window.addProduct=consolidatedAddProduct;addProduct=consolidatedAddProduct;
+})();
+</script>
 </body></html>
