@@ -436,4 +436,37 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
 </script>
 
 <!-- PUG_NEW_EMPTY_ACCOUNT_REGRESSION_FIX_V1 -->
+
+<script>
+/* PUG_PRODUCT_KEEP_SELECTED_CUSTOMER_V1 */
+(function(){
+ const SALE_KEY='pug_selected_sale_id_v1', CUSTOMER_KEY='pug_selected_customer_id_v1';
+ const remember=function(a){try{if(a&&a.id){sessionStorage.setItem(SALE_KEY,String(a.id));if(a.customer_id)sessionStorage.setItem(CUSTOMER_KEY,String(a.customer_id));}}catch(_){}};
+ const forget=function(){try{sessionStorage.removeItem(SALE_KEY);sessionStorage.removeItem(CUSTOMER_KEY)}catch(_){}};
+ const _choose=chooseAccount;
+ chooseAccount=function(id){const r=_choose.apply(this,arguments);if(activeAccount)remember(activeAccount);else if(!id)forget();return r};
+ window.chooseAccount=chooseAccount;
+ async function recoverSelectedAccount(){
+   if(activeAccount){remember(activeAccount);return activeAccount}
+   let saleId=null,customerId=null;try{saleId=sessionStorage.getItem(SALE_KEY);customerId=sessionStorage.getItem(CUSTOMER_KEY)}catch(_){}
+   if(saleId){let a=(data.accounts||[]).find(x=>String(x.id)===String(saleId));if(a){activeAccount=a;return a}}
+   if(customerId){
+     let a=(data.accounts||[]).find(x=>String(x.customer_id)===String(customerId));
+     if(a){activeAccount=a;remember(a);return a}
+     try{const c=(data.customers||[]).find(x=>String(x.id)===String(customerId));const r=await rpc('pos_front_open_account',{p_token:token,p_customer:customerId,p_label:null});a={id:r.sale_id,customer_id:customerId,account_name:r.account_name||(c?.display_name||'Cliente'),total_amount:Number(r.total_amount||0),lines:Array.isArray(r.lines)?r.lines:[]};data.accounts.unshift(a);activeAccount=a;remember(a);return a}catch(_){}
+   }
+   return null;
+ }
+ const _add=addProduct;
+ addProduct=async function(id){
+   if(!pugStockMode && !activeAccount){await recoverSelectedAccount()}
+   if(!pugStockMode && !activeAccount){showPugNotice('Seleciona um cliente antes de registar.');return}
+   const r=await _add.apply(this,arguments);if(activeAccount)remember(activeAccount);return r;
+ };
+ window.addProduct=addProduct;
+ const _finish=finishPaymentSuccess;finishPaymentSuccess=function(){forget();return _finish.apply(this,arguments)};
+ if(window.pugResetAfterPayment){const _reset=window.pugResetAfterPayment;window.pugResetAfterPayment=function(){forget();return _reset.apply(this,arguments)}}
+ window.pugRecoverSelectedAccount=recoverSelectedAccount;
+})();
+</script>
 </body></html>
