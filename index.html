@@ -413,4 +413,25 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
  window.pugResetAfterPayment=resetHome;
 })();
 </script>
+
+<script>
+/* PUG_STALE_ACTIVE_ACCOUNT_V2 */
+(function(){
+ function clearStale(){
+   try{
+     if(!activeAccount)return;
+     const total=Number(activeAccount.total||activeAccount.total_amount||activeAccount.balance||0);
+     const items=Array.isArray(activeAccount.items)?activeAccount.items.length:(Array.isArray(activeAccount.lines)?activeAccount.lines.length:0);
+     const status=String(activeAccount.financial_status||activeAccount.status||'').toLowerCase();
+     if(status==='paid'||status==='closed'||status==='settled'||(total<=0&&items===0)){activeAccount=null;catalogExpanded=false;}
+   }catch(_){}
+ }
+ const oldRenderAccountMode=renderAccountMode;
+ renderAccountMode=function(){clearStale();return oldRenderAccountMode.apply(this,arguments)};
+ const oldRenderCart=renderCart;
+ renderCart=function(){clearStale();return oldRenderCart.apply(this,arguments)};
+ window.addEventListener('pageshow',()=>{clearStale();try{renderAccountMode();renderCart();showFamilies()}catch(_){}});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){clearStale();try{renderAccountMode();renderCart()}catch(_){}}});
+})();
+</script>
 </body></html>
