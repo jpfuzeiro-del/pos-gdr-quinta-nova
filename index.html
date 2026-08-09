@@ -470,34 +470,6 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
 })();
 </script>
 
-<script>
-/* PUG_ADD_PRODUCT_DIRECT_FINAL_V1 */
-(function(){
- const SALE_KEY='pug_selected_sale_id_v1', CUSTOMER_KEY='pug_selected_customer_id_v1';
- async function resolveSelectedSale(){
-   if(activeAccount&&activeAccount.id)return activeAccount;
-   let saleId=null,customerId=null;try{saleId=sessionStorage.getItem(SALE_KEY);customerId=sessionStorage.getItem(CUSTOMER_KEY)}catch(_){}
-   if(saleId){const a=(data.accounts||[]).find(x=>String(x.id)===String(saleId));if(a){activeAccount=a;return a}}
-   if(customerId){let a=(data.accounts||[]).find(x=>String(x.customer_id)===String(customerId));if(a){activeAccount=a;try{sessionStorage.setItem(SALE_KEY,String(a.id))}catch(_){}return a}
-     const c=(data.customers||[]).find(x=>String(x.id)===String(customerId));const r=await rpc('pos_front_open_account',{p_token:token,p_customer:customerId,p_label:null});a={id:r.sale_id,customer_id:customerId,account_name:r.account_name||(c?.display_name||'Cliente'),total_amount:Number(r.total_amount||0),lines:Array.isArray(r.lines)?r.lines:[]};data.accounts.unshift(a);activeAccount=a;try{sessionStorage.setItem(SALE_KEY,String(a.id))}catch(_){}return a}
-   return null;
- }
- addProduct=async function(id){
-   if(typeof requireOpenCash==='function'&&!requireOpenCash())return;
-   if(typeof pugStockMode!=='undefined'&&pugStockMode){if(typeof addStockBasketProduct==='function')return addStockBasketProduct(id);if(typeof openStockActionForProduct==='function')return openStockActionForProduct(id)}
-   const account=await resolveSelectedSale();
-   if(!account){showPugNotice('Seleciona um cliente antes de registar.');return}
-   const saleId=String(account.id);
-   await rpc('pos_front_add_item',{p_token:token,p_sale:saleId,p_product:id,p_quantity:1});
-   await load();
-   let live=(data.accounts||[]).find(a=>String(a.id)===saleId);
-   if(!live){live={...account,id:saleId};data.accounts.unshift(live)}
-   activeAccount=live;
-   try{sessionStorage.setItem(SALE_KEY,saleId);if(live.customer_id)sessionStorage.setItem(CUSTOMER_KEY,String(live.customer_id))}catch(_){}
-   try{closeModal('clientsModal')}catch(_){}try{closeModal('accountsModal')}catch(_){}
-   catalogExpanded=false;renderAccounts();renderCart();renderAccountMode();window.scrollTo({top:0,behavior:'smooth'});
- };
- window.addProduct=addProduct;
-})();
-</script>
+
+<!-- PUG_ROLLBACK_ADD_PRODUCT_DIRECT_FINAL_V1 -->
 </body></html>
