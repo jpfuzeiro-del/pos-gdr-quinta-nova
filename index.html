@@ -78,7 +78,7 @@ header .brand small{font-size:.72rem!important}
 <section id="accountFocus" class="account-focus"><h2 id="focusTitle">Conta</h2><div id="focusSummary" class="account-card"></div><div id="focusLines" class="focus-lines"></div><div class="focus-actions"><button id="focusReceive" class="focus-receive" onclick="openPayment()">Receber</button><button class="focus-share" onclick="shareOpenAccount()">Enviar conta</button><button class="add-products-btn" onclick="showCatalogForAccount()">＋ Acrescentar produtos</button><button class="focus-share" onclick="leaveAccount()">← Voltar às contas</button></div></section>
 <section id="familyScreen"><div class="section"><h2>Famílias</h2><small id="catCount"></small></div><div class="grid" id="categories"></div></section><section id="productScreen" class="screen-hidden"><div class="backbar"><button class="backbtn" onclick="showFamilies()">← Famílias</button><strong id="productTitle">Produtos</strong><small id="productCount"></small></div><div style="text-align:right;margin:8px 0 12px"><button class="newproduct" onclick="openNewProduct()">＋ NOVO PRODUTO</button></div><div class="products" id="products"></div></section></main></div>
 <div id="bottomBar" class="bottom"><div class="lines" id="lines"><div class="sub">Conta vazia</div></div><div class="total"><span>Total</span><b id="total">0,00 €</b></div><button class="pay-btn" onclick="openPayment()">RECEBER 0,00 €</button></div>
-<div id="clientsModal" class="overlay hidden"><div class="panel"><h2 id="clientsTitle">Cliente / abrir conta</h2><input id="customerSearch" class="field" placeholder="Procurar cliente" oninput="renderCustomers()"><div id="customerList"></div><hr><input id="newCustomerName" class="field hidden" placeholder="Nome do novo cliente"><button id="saveCustomerBtn" class="listbtn hidden" onclick="createCustomer()">Guardar cliente</button><button class="listbtn" onclick="openCounter()">Balcão / cliente ocasional</button><button class="listbtn cancel" onclick="closeModal('clientsModal')">Cancelar</button></div></div>
+<div id="clientsModal" class="overlay hidden"><div class="panel"><h2 id="clientsTitle">Cliente / abrir conta</h2><input id="customerSearch" class="field" placeholder="Procurar cliente" oninput="renderCustomers()"><div id="customerList"></div><hr><input id="newCustomerName" class="field hidden" placeholder="Nome do novo cliente"><button id="saveCustomerBtn" class="listbtn hidden" onclick="createCustomer()">Guardar cliente</button><button class="listbtn" onclick="openCounter()">Balcão / cliente ocasional</button><button class="listbtn cancel" onclick="closeModal('clientsModal');if(activeAccount){catalogExpanded=true;renderAccountMode();showFamilies()}">← Voltar</button></div></div>
 <div id="accountsModal" class="overlay hidden"><div class="panel"><h2>Contas abertas</h2><div id="accountsList"></div><button class="listbtn cancel" onclick="closeModal('accountsModal')">Fechar</button></div></div>
 <div id="cashOpenModal" class="overlay hidden"><div class="panel"><h2>Abertura de caixa</h2><p id="cashOpenMessage" class="sub">Indica o fundo inicial.</p><label class="fieldlabel">Valor inicial (€)</label><input id="cashOpeningFloat" class="field" type="number" min="0" step="0.01" inputmode="decimal"><button class="cash-open-action" onclick="confirmOpenCash()">Abrir caixa</button><button class="cancel" onclick="closeModal('cashOpenModal')">Cancelar</button></div></div>
 <div id="paymentModal" class="overlay hidden"><div class="panel"><h2>Pagamento</h2><div class="total"><span>Total da conta</span><b id="paymentTotal"></b></div><div class="payment-choice"><button class="cash" onclick="showCashPayment()">💶 Dinheiro</button><button class="mb" onclick="pay('mbway')">📱 MB Way</button><button class="debt" onclick="pay('deferred')">🧾 Fica a dever</button><button class="cancel" onclick="closeModal('paymentModal')">Cancelar</button></div><div id="cashPanel" class="cashbox hidden"><label class="fieldlabel">Valor recebido (€)</label><input id="cashTendered" class="field" type="number" min="0" step="0.01" inputmode="decimal" oninput="updateChange()"><div class="quick-cash"><button onclick="setCashExact()">Valor exato</button><button onclick="setCashValue(5)">5 €</button><button onclick="setCashValue(10)">10 €</button></div><div id="changeResult" class="change-result">Troco a entregar: 0,00 €</div><button id="confirmCashBtn" class="payment-confirm" onclick="confirmCashPayment()" disabled>Confirmar pagamento em dinheiro</button></div></div></div>
@@ -343,4 +343,26 @@ async function confirmStockBasket(){
 <!-- PUG_TACTILE_KEEP_ACCOUNT_V2 -->
 
 <!-- PUG_TACTILE_KEEP_ACCOUNT_V3 -->
+
+<script>
+/* PUG_CLIENT_SELECTION_NAV_V1 */
+(function(){
+ const _closeModal=window.closeModal||closeModal;
+ window.pugReturnFromClients=function(){try{_closeModal('clientsModal')}catch(_){document.getElementById('clientsModal')?.classList.add('hidden')}if(activeAccount){catalogExpanded=true;renderAccountMode();showFamilies()}else{showFamilies()}};
+ const backButtons=[...document.querySelectorAll('#clientsModal button.cancel')];backButtons.forEach(b=>{b.textContent='← Voltar';b.onclick=window.pugReturnFromClients});
+ window.selectCustomer=async function(id){
+   if(clientMode==='current'){try{_closeModal('clientsModal')}catch(_){};if(typeof openCurrentAccount==='function')await openCurrentAccount(id);return}
+   const customer=(data.customers||[]).find(c=>String(c.id)===String(id));
+   let existing=(data.accounts||[]).find(a=>String(a.customer_id)===String(id));
+   let saleId=existing?.id||null;
+   if(!saleId){const a=await rpc('pos_front_open_account',{p_token:token,p_customer:id,p_label:null});saleId=a.sale_id;const fallback={id:saleId,customer_id:id,account_name:a.account_name||(customer?.display_name||'Cliente'),total_amount:Number(a.total_amount||0),lines:Array.isArray(a.lines)?a.lines:[]};if(!(data.accounts||[]).some(x=>String(x.id)===String(saleId)))data.accounts.unshift(fallback)}
+   try{_closeModal('clientsModal')}catch(_){document.getElementById('clientsModal')?.classList.add('hidden')}
+   try{await load()}catch(_){}
+   let found=(data.accounts||[]).find(a=>String(a.id)===String(saleId));
+   if(!found){found={id:saleId,customer_id:id,account_name:customer?.display_name||'Cliente',total_amount:0,lines:[]};data.accounts.unshift(found)}
+   chooseAccount(String(saleId));
+   catalogExpanded=true;renderAccountMode();showFamilies();window.scrollTo({top:0,behavior:'smooth'});
+ };
+})();
+</script>
 </body></html>
