@@ -390,4 +390,27 @@ function renderQuickCash(){const box=document.getElementById('quickCashButtons')
 const _openPaymentCashQuick=openPayment;openPayment=function(){const r=_openPaymentCashQuick.apply(this,arguments);setTimeout(renderQuickCash,0);return r};
 const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_showCashPaymentQuick.apply(this,arguments);renderQuickCash();setTimeout(()=>cashTendered.select(),30);return r};
 </script>
+
+<script>
+/* PUG_POST_PAYMENT_HOME_V1 */
+(function(){
+ const resetHome=function(){
+   activeAccount=null;catalogExpanded=false;
+   try{document.getElementById('paymentModal')?.classList.add('hidden')}catch(_){}
+   try{document.getElementById('paymentSuccessModal')?.classList.add('hidden')}catch(_){}
+   try{document.getElementById('clientsModal')?.classList.add('hidden')}catch(_){}
+   try{document.getElementById('accountsModal')?.classList.add('hidden')}catch(_){}
+   try{renderAccounts()}catch(_){}
+   try{renderCart()}catch(_){}
+   try{showFamilies()}catch(_){}
+   try{renderAccountMode()}catch(_){}
+   window.scrollTo({top:0,behavior:'smooth'});
+ };
+ const _finish=finishPaymentSuccess;
+ finishPaymentSuccess=function(){try{_finish()}catch(_){}resetHome()};
+ const _show=showPaymentSuccess;
+ showPaymentSuccess=function(...args){_show.apply(this,args);setTimeout(()=>{const btn=document.querySelector('#paymentSuccessModal button');if(btn&&!btn.dataset.pugHome){btn.dataset.pugHome='1';const old=btn.onclick;btn.onclick=function(e){try{if(typeof old==='function')old.call(this,e)}catch(_){}resetHome()}}},0)};
+ window.pugResetAfterPayment=resetHome;
+})();
+</script>
 </body></html>
