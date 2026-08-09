@@ -503,4 +503,21 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
  window.addProduct=consolidatedAddProduct;addProduct=consolidatedAddProduct;
 })();
 </script>
+
+<style>
+/* PUG_LEAVE_ACCOUNT_OPEN_V1 */
+#leaveAccountOpenBtn{display:none;width:calc(100% - 56px);margin:0 28px 12px;padding:16px;border:0;border-radius:18px;background:#eef2f4;color:#17233a;font-size:20px;font-weight:800}body.pug-has-open-account #leaveAccountOpenBtn{display:block}
+</style>
+<script>
+/* PUG_LEAVE_ACCOUNT_OPEN_V1 */
+(function(){
+ function ensureBtn(){let b=document.getElementById('leaveAccountOpenBtn');if(b)return b;b=document.createElement('button');b.id='leaveAccountOpenBtn';b.type='button';b.textContent='DEIXAR EM CONTA';b.onclick=leaveAccountOpen;const receive=[...document.querySelectorAll('button')].find(x=>/RECEBER/.test(x.textContent||''));if(receive&&receive.parentNode)receive.parentNode.insertBefore(b,receive);else document.body.appendChild(b);return b}
+ function syncLeaveBtn(){ensureBtn();document.body.classList.toggle('pug-has-open-account',!!(activeAccount&&Number(activeAccount.total_amount||0)>0))}
+ function neutralHome(){activeAccount=null;catalogExpanded=false;activeCategory=null;try{sessionStorage.removeItem('pug_selected_account_v1');sessionStorage.removeItem('pug_selected_customer_v1')}catch(_){};try{closeModal('clientsModal')}catch(_){}try{closeModal('accountsModal')}catch(_){}try{showFamilies()}catch(_){}try{renderAccounts()}catch(_){}try{renderCart()}catch(_){}try{renderAccountMode()}catch(_){}syncLeaveBtn()}
+ window.leaveAccountOpen=function(){neutralHome()}
+ const oldRA=renderAccountMode;renderAccountMode=function(){const r=oldRA.apply(this,arguments);syncLeaveBtn();return r}
+ const oldRC=renderCart;renderCart=function(){const r=oldRC.apply(this,arguments);syncLeaveBtn();return r}
+ window.pugNeutralHome=neutralHome;setTimeout(syncLeaveBtn,0);
+})();
+</script>
 </body></html>
