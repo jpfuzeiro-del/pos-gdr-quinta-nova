@@ -338,4 +338,49 @@ async function confirmStockBasket(){
  }catch(e){showPugNotice('Não foi possível registar: '+(e.message||e))}
 }
 </script>
+
+<script>
+/* PUG_TACTILE_KEEP_ACCOUNT_V1 */
+(function(){
+  function keepAccountAfterMutation(accountId){
+    if(!accountId)return;
+    const id=String(accountId);
+    queueMicrotask(()=>{
+      try{
+        if(typeof chooseAccount==='function'){chooseAccount(id);}
+        if(typeof showFamilies==='function'){showFamilies();}
+      }catch(_){}
+    });
+    setTimeout(()=>{
+      try{
+        if(typeof chooseAccount==='function'){chooseAccount(id);}
+      }catch(_){}
+    },80);
+  }
+  const wrap=(name)=>{
+    const fn=window[name];
+    if(typeof fn!=='function'||fn.__pugKeepAccount)return false;
+    const wrapped=async function(...args){
+      const before=(typeof activeAccount!=='undefined'&&activeAccount)?String(activeAccount):null;
+      const r=await fn.apply(this,args);
+      if(before)keepAccountAfterMutation(before);
+      return r;
+    };
+    wrapped.__pugKeepAccount=true;
+    window[name]=wrapped;
+    try{eval(name+'=window[name]')}catch(_){}
+    return true;
+  };
+  const names=['addProduct','addItem','addLine','registerProduct','registerItem','setQty'];
+  names.forEach(wrap);
+  document.addEventListener('click',(ev)=>{
+    const t=ev.target instanceof Element?ev.target.closest('button,[onclick]'):null;
+    if(!t)return;
+    const oc=t.getAttribute('onclick')||'';
+    if(!/(addProduct|addItem|addLine|registerProduct|registerItem)/.test(oc))return;
+    const before=(typeof activeAccount!=='undefined'&&activeAccount)?String(activeAccount):null;
+    if(before)setTimeout(()=>keepAccountAfterMutation(before),120);
+  },true);
+})();
+</script>
 </body></html>
