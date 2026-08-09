@@ -503,4 +503,21 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
  window.addProduct=consolidatedAddProduct;addProduct=consolidatedAddProduct;
 })();
 </script>
+
+<script>
+/* PUG_LEAVE_ACCOUNT_SAFE_V2 */
+(function(){
+ function install(){
+   if(document.getElementById('pugLeaveSafe'))return;
+   const receive=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').trim()==='RECEBER');
+   if(!receive||!receive.parentNode)return;
+   const b=document.createElement('button');b.id='pugLeaveSafe';b.type='button';b.textContent='DEIXAR EM CONTA';b.style.cssText='display:none;width:calc(100% - 56px);margin:0 28px 12px;padding:16px;border:0;border-radius:18px;background:#eef2f4;color:#17233a;font-size:20px;font-weight:800';
+   b.onclick=function(){if(!window.activeAccount&&!activeAccount)return;activeAccount=null;catalogExpanded=false;try{showFamilies()}catch(_){}try{renderCart()}catch(_){}try{renderAccountMode()}catch(_){}update()};
+   receive.parentNode.insertBefore(b,receive);update();
+ }
+ function update(){const b=document.getElementById('pugLeaveSafe');if(!b)return;let a=null;try{a=activeAccount}catch(_){}b.style.display=(a&&Number(a.total_amount||0)>0)?'block':'none'}
+ document.addEventListener('click',()=>setTimeout(update,0),true);
+ const mo=new MutationObserver(()=>{install();update()});mo.observe(document.body,{childList:true,subtree:true});install();
+})();
+</script>
 </body></html>
