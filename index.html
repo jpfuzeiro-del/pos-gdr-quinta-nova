@@ -423,7 +423,7 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
      const total=Number(activeAccount.total||activeAccount.total_amount||activeAccount.balance||0);
      const items=Array.isArray(activeAccount.items)?activeAccount.items.length:(Array.isArray(activeAccount.lines)?activeAccount.lines.length:0);
      const status=String(activeAccount.financial_status||activeAccount.status||'').toLowerCase();
-     if(status==='paid'||status==='closed'||status==='settled'||(total<=0&&items===0)){activeAccount=null;catalogExpanded=false;}
+     if(status==='paid'||status==='closed'||status==='settled'){activeAccount=null;catalogExpanded=false;}
    }catch(_){}
  }
  const oldRenderAccountMode=renderAccountMode;
@@ -434,4 +434,6 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){clearStale();try{renderAccountMode();renderCart()}catch(_){}}});
 })();
 </script>
+
+<!-- PUG_NEW_EMPTY_ACCOUNT_REGRESSION_FIX_V1 -->
 </body></html>
