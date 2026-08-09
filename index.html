@@ -365,4 +365,22 @@ async function confirmStockBasket(){
  };
 })();
 </script>
+
+<script>
+/* PUG_CLIENT_RUNTIME_FIX_V2 */
+openForCustomer=async function(id){
+ const customer=(data.customers||[]).find(c=>String(c.id)===String(id));
+ let a=(data.accounts||[]).find(x=>String(x.customer_id)===String(id));
+ let saleId=a?.id||null;
+ if(!saleId){const r=await rpc('pos_front_open_account',{p_token:token,p_customer:id,p_label:null});saleId=r.sale_id;a={id:saleId,customer_id:id,account_name:r.account_name||(customer?.display_name||'Cliente'),total_amount:Number(r.total_amount||0),lines:Array.isArray(r.lines)?r.lines:[]}}
+ try{closeModal('clientsModal')}catch(_){}
+ try{await load()}catch(_){}
+ let live=(data.accounts||[]).find(x=>String(x.id)===String(saleId));
+ if(!live){live={...a,id:saleId,customer_id:id,account_name:a?.account_name||(customer?.display_name||'Cliente'),total_amount:Number(a?.total_amount||0),lines:Array.isArray(a?.lines)?a.lines:[]};data.accounts.unshift(live)}
+ chooseAccount(String(saleId));catalogExpanded=true;renderAccountMode();showFamilies();window.scrollTo({top:0,behavior:'smooth'});
+};
+selectCustomer=async function(id){if(clientMode==='current'){closeModal('clientsModal');if(typeof openCurrentAccount==='function')await openCurrentAccount(id);return}await openForCustomer(id)};
+window.openForCustomer=openForCustomer;window.selectCustomer=selectCustomer;
+const cb=document.querySelector('#clientsModal button.cancel');if(cb){cb.textContent='← Voltar';cb.onclick=function(){closeModal('clientsModal');if(activeAccount){catalogExpanded=true;renderAccountMode()}showFamilies();window.scrollTo({top:0,behavior:'smooth'})}}
+</script>
 </body></html>
