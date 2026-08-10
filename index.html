@@ -525,4 +525,5 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
  const oldAlert=window.alert; window.alert=function(msg){const t=norm(String(msg));if(t.includes('conta corrente')&&(t.includes('colocad')||t.includes('registad')))return;return oldAlert.apply(this,arguments)};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',simplify,{once:true});else simplify();
  setTimeout(simplify,300);
-})();</script></body></html>
+})();</script><script>/* PUG_UNIFY_CURRENT_ACCOUNTS_V1 */
+(function(){function norm(s){return (s||'').replace(/\s+/g,' ').trim().toLocaleLowerCase('pt-PT')}function wire(){const top=[...document.querySelectorAll('button.nav-accounts,button')].find(b=>norm(b.textContent)==='📋 contas'||norm(b.textContent)==='contas'||(b.classList.contains('nav-accounts')&&norm(b.textContent).includes('contas')));if(top){top.innerHTML='📋<br>CONTAS CORRENTES';top.onclick=function(e){if(e)e.preventDefault();if(typeof window.pugG9Open==='function')window.pugG9Open();};}const g9=document.getElementById('pugG9Btn');if(g9)g9.style.display='none';}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire,{once:true});else wire();setTimeout(wire,250);})();</script></body></html>
