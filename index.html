@@ -512,4 +512,17 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
 <button id="pugG9Btn" class="pug-g9-btn" type="button" onclick="pugG9Open()">Contas correntes</button>
 <div id="pugG9Panel" class="pug-g9-panel hidden"><div class="pug-g9-sheet"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Contas correntes</h2><button type="button" onclick="pugG9Close()">✕</button></div><div id="pugG9List">A carregar…</div></div></div>
 <script>async function pugG9Open(){const p=document.getElementById('pugG9Panel'),l=document.getElementById('pugG9List');p.classList.remove('hidden');l.textContent='A carregar…';try{if(!token)throw new Error('Sessão não iniciada');const ds=await rpc('pos_front_debts',{p_token:token});if(!Array.isArray(ds)||!ds.length){l.innerHTML='<div class="sub">Sem contas correntes em aberto.</div>';return}l.innerHTML=ds.map(d=>'<button class="pug-g9-row" type="button" onclick="pugG9Detail('+JSON.stringify(String('${d.customer_id}'))+')"><span><b>'+String(d.customer_name||'Cliente')+'</b></span><b>'+euro(Number(d.outstanding_amount||0))+'</b></button>').join('')}catch(e){l.textContent='Não foi possível carregar: '+(e.message||e)}}function pugG9Close(){document.getElementById('pugG9Panel').classList.add('hidden')}async function pugG9Detail(customerId){try{const a=await rpc('pos_front_customer_account',{p_token:token,p_customer:customerId});const h=(a&&a.history)||[];const total=h.reduce((n,x)=>n+Number(x.outstanding_amount||0),0);document.getElementById('pugG9List').innerHTML='<button type="button" onclick="pugG9Open()">← Voltar</button><div style="padding:16px 0"><b>Histórico do cliente</b><br>'+h.length+' movimento(s)</div>'}catch(e){document.getElementById('pugG9List').textContent='Não foi possível abrir: '+(e.message||e)}}</script>
-</body></html>
+<script>/* PUG_UI_SIMPLIFY_CC_V1 */
+(function(){
+ function norm(s){return (s||'').trim().toLocaleLowerCase('pt-PT')}
+ function simplify(){
+  const buttons=[...document.querySelectorAll('button')];
+  for(const b of buttons){if(norm(b.textContent)==='contas'){b.textContent='Contas Correntes';break}}
+  const current=[...document.querySelectorAll('button')].filter(b=>norm(b.textContent)==='contas correntes');
+  for(const b of current){const box=b.parentElement;if(!box)continue;const hasReceive=[...box.querySelectorAll('button')].some(x=>norm(x.textContent).startsWith('receber'));if(hasReceive)b.remove()}
+ }
+ const oldNotice=window.showPugNotice; if(typeof oldNotice==='function'){window.showPugNotice=function(msg){const t=norm(String(msg));if(t.includes('conta corrente')&&(t.includes('colocad')||t.includes('registad')))return;return oldNotice.apply(this,arguments)}}
+ const oldAlert=window.alert; window.alert=function(msg){const t=norm(String(msg));if(t.includes('conta corrente')&&(t.includes('colocad')||t.includes('registad')))return;return oldAlert.apply(this,arguments)};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',simplify,{once:true});else simplify();
+ setTimeout(simplify,300);
+})();</script></body></html>
