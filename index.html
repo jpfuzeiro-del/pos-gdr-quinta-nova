@@ -570,4 +570,12 @@ const _showCashPaymentQuick=showCashPayment;showCashPayment=function(){const r=_
  $('#pugRendererClose')?.addEventListener('click',close);bind();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});setTimeout(bind,350);
 })();
 </script>
-</body></html>
+<script>/* PUG_CC_ACCUMULATE_V1 */
+(function(){
+ const _oldChoose=window.chooseAccount;
+ if(typeof _oldChoose==='function') window.chooseAccount=async function(a){const r=await _oldChoose.apply(this,arguments);try{if(a&&a.customer_id&&typeof rpc==='function'){const ca=await rpc('pos_front_customer_account',{p_token:token,p_customer:a.customer_id});const hist=(ca&&ca.history||[]).filter(x=>Number(x.outstanding_amount||0)>0);window.__pugExistingDebt=hist.reduce((s,x)=>s+Number(x.outstanding_amount||0),0);window.__pugDebtCustomer=a.customer_id;} }catch(e){console.warn('PUG debt context',e)}return r};
+ const _oldPay=window.openPayment;
+ if(typeof _oldPay==='function') window.openPayment=function(){try{if(window.__pugExistingDebt>0&&activeAccount&&activeAccount.customer_id===window.__pugDebtCustomer){activeAccount.previous_balance=window.__pugExistingDebt;activeAccount.total_amount=(activeAccount.lines||[]).reduce((s,l)=>s+Number(l.line_total||0),0)+window.__pugExistingDebt;}}catch(e){}return _oldPay.apply(this,arguments)};
+ const _oldAlert=window.alert;
+ window.alert=function(m){if(String(m||'').trim()==='Consumo registado em conta corrente.')return;return _oldAlert.apply(this,arguments)};
+})();</script></body></html>
