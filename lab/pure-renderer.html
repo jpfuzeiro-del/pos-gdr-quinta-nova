@@ -33,7 +33,26 @@ body[data-screen="families"] .screen-actions button:first-child{border-color:#86
 #status{background:transparent;border:0;box-shadow:none;margin:2px 0;padding:7px 3px;font-size:12px;min-height:0}
 body[data-screen="sale_payment"] .screen-actions,body[data-screen="sale_cash_payment"] .screen-actions,body[data-screen="current_account_payment"] .screen-actions,body[data-screen="current_account_cash_payment"] .screen-actions{justify-content:flex-end}
 @media(max-width:560px){header{padding:8px 10px}header img{width:46px;height:46px}header .sub{font-size:10px}.topmeta{max-width:120px;text-align:right}main{padding:10px 9px 24px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.tile-button{min-height:80px;padding:12px;font-size:.96rem}.screen-actions button{flex:1 1 calc(50% - 6px)}.cart-card .row:first-child>div{flex-basis:100%!important}.cart-card .row:first-child button{flex:1 1 calc(50% - 6px)}#cartReceive{flex-basis:100%!important}.card{border-radius:14px;padding:13px}.screen-title{padding:6px 2px 0}.screen-title h2{font-size:1.35rem}}
-</style></head><body><header><img id="brand" src="/pos-gdr-quinta-nova/assets/gdr-quinta-nova-logo.png" alt="GDR Quinta Nova"><div class="grow"><b>POS GDR Quinta Nova</b><div class="sub">LAB · renderer pequeno / Supabase autoritativo · v38</div></div><div id="who" class="topmeta"></div></header><main>
+
+/* PUG Interface V39 — compactação visual */
+header{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;padding:7px 11px}
+header img{width:46px;height:46px;border-radius:11px}
+header .grow>b{font-size:.98rem;line-height:1.05;display:block}
+header .sub{font-size:10px;line-height:1.2;margin-top:2px}
+.topmeta{display:flex;gap:5px;align-items:center;justify-content:flex-end;white-space:nowrap;font-size:11px;opacity:1}
+.op-pill,.cash-pill{display:inline-flex;align-items:center;min-height:28px;padding:5px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07)}
+.cash-pill.open{color:#d9fbe5}.cash-pill.closed{color:#fee2e2}
+.screen-title{margin:0 0 5px;padding:5px 2px 0}.screen-title h2{font-size:1.28rem}
+.tile-button{min-height:66px;padding:11px 13px}.tile-button b{font-size:1rem}
+.grid{gap:7px}.tile-card{border-radius:14px}
+.screen-actions{gap:6px;margin:4px 0 8px}.screen-actions button{min-height:42px;padding:9px 11px;font-size:.93rem;flex:0 1 auto}
+body[data-screen="families"] .screen-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+body[data-screen="families"] .screen-actions button{width:100%;min-height:42px}
+body[data-screen="families"] .screen-actions button:first-child{font-weight:850}
+.cart-card{margin-top:8px;padding:12px 13px}.cart-card .line{padding:9px 0}.cart-card .big{padding:11px 15px;font-size:1rem}
+main{padding-top:9px}
+@media(max-width:560px){header{grid-template-columns:auto minmax(0,1fr);row-gap:5px;padding:7px 9px}header img{grid-row:1/3;width:44px;height:44px}.topmeta{grid-column:2;justify-content:flex-start;font-size:10px}.op-pill,.cash-pill{min-height:24px;padding:3px 7px}.screen-title h2{font-size:1.22rem}.tile-button{min-height:60px;padding:9px 11px}.tile-button b{font-size:.96rem}.grid{gap:6px}.screen-actions button{font-size:.9rem;min-height:40px}.cart-card .row:first-child button{min-height:42px}}
+</style></head><body><header><img id="brand" src="/pos-gdr-quinta-nova/assets/gdr-quinta-nova-logo.png" alt="GDR Quinta Nova"><div class="grow"><b>POS GDR Quinta Nova</b><div class="sub">LAB · renderer pequeno / Supabase autoritativo · v39</div></div><div id="who" class="topmeta"></div></header><main>
 <section id="login" class="card"><h2>Entrada</h2><div class="row"><input id="code" placeholder="Operador" autocomplete="username"><input id="pin" type="password" placeholder="PIN" autocomplete="current-password"><button id="go" class="primary">Entrar</button></div><div id="loginErr" class="err"></div></section>
 <section id="app" class="hidden"><div id="root"></div><div id="status" class="card muted"></div></section>
 </main><script>
@@ -44,7 +63,7 @@ function path(o,p){if(!p)return o;return String(p).replace(/^\$form\./,'').split
 async function rpc(n,p){const r=await fetch(U+'/rest/v1/rpc/'+n,{method:'POST',headers:{apikey:K,'content-type':'application/json'},body:JSON.stringify(p||{})}),t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch{j=t}if(!r.ok)throw Error((j&&j.message)||String(j||n));return j}
 function screens(){return S.manifest?.screens||[]}function screen(k){return screens().find(x=>x.key===k)}function actions(k){return screen(k)?.actions||[]}function action(k,key){return actions(k).find(a=>a.key===key)}function status(t,c='muted'){$('#status').className='card '+c;$('#status').textContent=t}
 function resolve(v,row=null,result=null){if(Array.isArray(v))return v.map(x=>resolve(x,row,result));if(v&&typeof v==='object'){const o={};for(const[k,x]of Object.entries(v))o[k]=resolve(x,row,result);return o}if(typeof v!=='string'||v[0]!=='$')return v;const[root,...rest]=v.slice(1).split('.'),p=rest.join('.');return root==='context'?path(S.context,p):root==='ui'?path(S.ui,p):root==='form'?path(S.form,p):root==='row'?path(row,p):root==='result'?path(result,p):v}
-async function refresh(){S.bootstrap=await rpc('pos_front_bootstrap',{p_token:S.token});S.manifest=await rpc('pos_front_ui_manifest',{p_token:S.token});$('#who').textContent=(S.bootstrap?.operator?.name||S.bootstrap?.operator?.display_name||'')+(S.bootstrap?.cash_open?' · Caixa aberta':' · Caixa fechada')}
+async function refresh(){S.bootstrap=await rpc('pos_front_bootstrap',{p_token:S.token});S.manifest=await rpc('pos_front_ui_manifest',{p_token:S.token});const n=S.bootstrap?.operator?.name||S.bootstrap?.operator?.display_name||'',open=!!S.bootstrap?.cash_open;$('#who').innerHTML='<span class=\"op-pill\">'+esc(n)+'</span><span class=\"cash-pill '+(open?'open':'closed')+'\">● '+(open?'Caixa aberta':'Caixa fechada')+'</span>'}
 function visible(a){const c=a.config||{};if(a.allowed===false)return false;if(c.checkout_only)return false;if(c.requires_customer&&!S.context.customer_id)return false;if(c.requires_no_customer&&S.context.customer_id)return false;if(c.requires_sale&&!S.context.sale_id)return false;if(c.requires_cash_management&&!S.bootstrap?.cash?.management_allowed)return false;if(c.requires_cash_closed&&S.bootstrap?.cash_open)return false;return true}
 function resetFor(a){for(const k of(a.success?.reset_ui||[]))S.ui[k]=k==='items'||k==='voice_items'?[]:null;for(const k of(a.success?.reset_form||[]))delete S.form[k];for(const k of(a.success?.clear_context||[]))delete S.context[k]}
 function useResult(a,r){for(const[k,p]of Object.entries(a.success?.use_result||{}))S.context[k]=path(r,p)}
