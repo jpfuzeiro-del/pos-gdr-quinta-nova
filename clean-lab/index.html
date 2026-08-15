@@ -428,125 +428,35 @@ const _renderCartV11=renderCart;renderCart=function(){const r=_renderCartV11.app
   const baseOpenForCustomer = openForCustomer;
   const neutral = window.pugNeutralCartV1 = window.pugNeutralCartV1 || [];
   window.pugNeutralCheckoutV1 = false;
-
   function neutralTotal(){ return neutral.reduce(function(s,x){ return s + Number(x.unit_price||0)*Number(x.quantity||0); },0); }
-  function neutralLineHtml(x){
-    const q=Number(x.quantity||0), unit=Number(x.unit_price||0), line=unit*q;
-    return '<div class="line"><span>'+x.name+'</span><span class="qty"><button onclick="setQty(\'neutral:'+x.product_id+'\','+Math.max(0,q-1)+')">−</button><b>'+q+'x</b><button onclick="setQty(\'neutral:'+x.product_id+'\','+(q+1)+')">+</button></span><span class="line-price"><small>'+euro(unit)+' cada</small><b>'+euro(line)+' total</b></span><button class="delete-line" onclick="setQty(\'neutral:'+x.product_id+'\',0)" aria-label="Eliminar">×</button></div>';
-  }
-  function renderNeutral(){
-    const lineBox=document.getElementById('lines'), totalBox=document.getElementById('total'), payBtn=document.querySelector('.pay-btn'), sub=document.getElementById('accountSub');
-    if(!lineBox||!totalBox||!payBtn) return;
-    lineBox.innerHTML=neutral.length?neutral.map(neutralLineHtml).join(''):'<div class="sub">Conta vazia</div>';
-    const amount=neutralTotal();
-    totalBox.textContent=euro(amount);
-    payBtn.disabled=!neutral.length;
-    payBtn.textContent='RECEBER '+euro(amount);
-    if(sub&&!activeAccount){ sub.classList.remove('no-account'); sub.textContent=neutral.length?'Cesto sem cliente — destino escolhido no Receber':'Nenhuma conta selecionada'; }
-    try{ renderAccountMode(); }catch(_e){}
-  }
-  function resetNeutralStatus(){
-    const sub=document.getElementById('accountSub');
-    if(sub&&!activeAccount&&!neutral.length){ sub.classList.add('no-account'); sub.textContent='Nenhuma conta selecionada'; }
-  }
-
-  renderCart=function(){
-    if(!activeAccount && neutral.length){ renderNeutral(); return; }
-    baseRenderCart();
-    resetNeutralStatus();
-  };
-
-  addProduct=async function(id){
-    if(!requireOpenCash()) return;
-    if(activeAccount) return baseAddProduct(id);
-    const p=(data?.products||[]).find(function(x){ return String(x.id)===String(id); });
-    if(!p){ showPugNotice('Produto não encontrado.'); return; }
-    let row=neutral.find(function(x){ return String(x.product_id)===String(id); });
-    if(row) row.quantity=Number(row.quantity||0)+1;
-    else neutral.push({product_id:p.id,name:p.name,unit_price:Number(p.price||0),quantity:1});
-    activeCategory=null;
-    renderNeutral();
-    showFamilies();
-  };
-
-  setQty=async function(id,q){
-    if(String(id).indexOf('neutral:')===0){
-      const productId=String(id).slice(8), idx=neutral.findIndex(function(x){ return String(x.product_id)===productId; });
-      if(idx<0) return;
-      const n=Number(q||0);
-      if(n<=0) neutral.splice(idx,1); else neutral[idx].quantity=n;
-      if(neutral.length) renderNeutral(); else { baseRenderCart(); resetNeutralStatus(); }
-      return;
-    }
-    return baseSetQty(id,q);
-  };
-
-  function showDestination(){
-    window.pugNeutralCheckoutV1=true;
-    pendingProductId=null;
-    clientsTitle.textContent='Onde registar este consumo?';
-    customerSearch.classList.add('hidden');
-    newCustomerName.classList.add('hidden');
-    saveCustomerBtn.classList.add('hidden');
-    customerList.innerHTML='<div class="action-hub"><button class="listbtn" onclick="openCounter()">🧾 <b>Balcão</b><br><small>Venda imediata / cliente ocasional.</small></button><button class="listbtn" onclick="pugNeutralChooseCustomerV1()">👤 <b>Escolher cliente</b><br><small>Procurar um cliente registado.</small></button></div>';
-    const cancel=clientsModal.querySelector('button.cancel');
-    if(cancel) cancel.onclick=function(){ window.pugNeutralCheckoutV1=false; closeModal('clientsModal'); };
-    clientsModal.classList.remove('hidden');
-  }
-
-  window.pugNeutralChooseCustomerV1=function(){
-    openClients('open');
-    clientsTitle.textContent='Escolher cliente';
-  };
-
-  openPayment=function(){
-    if(!requireOpenCash()) return;
-    if(!activeAccount && neutral.length){ showDestination(); return; }
-    return baseOpenPayment();
-  };
-
-  async function materializeNeutral(){
-    if(!activeAccount || !neutral.length) return;
-    const saleId=String(activeAccount.id);
-    const items=neutral.map(function(x){ return {product_id:x.product_id,quantity:Number(x.quantity||0)}; });
-    await rpc('pos_front_add_items_batch',{p_token:token,p_sale:saleId,p_items:items});
-    await load();
-    const fresh=(data.accounts||[]).find(function(a){ return String(a.id)===saleId; });
-    if(!fresh) throw new Error('conta_nao_encontrada_apos_cesto');
-    neutral.splice(0,neutral.length);
-    chooseAccount(fresh.id);
-    catalogExpanded=false;
-    renderCart();
-  }
-
-  openCounter=async function(){
-    if(!window.pugNeutralCheckoutV1) return baseOpenCounter();
-    try{
-      pendingProductId=null;
-      await baseOpenCounter();
-      if(!activeAccount) throw new Error('balcao_nao_aberto');
-      await materializeNeutral();
-      window.pugNeutralCheckoutV1=false;
-      closeModal('clientsModal');
-      baseOpenPayment();
-    }catch(e){ showPugNotice('Não foi possível preparar o pagamento: '+(e?.message||e)); }
-  };
-
-  openForCustomer=async function(id){
-    if(!window.pugNeutralCheckoutV1) return baseOpenForCustomer(id);
-    try{
-      pendingProductId=null;
-      await baseOpenForCustomer(id);
-      if(!activeAccount) throw new Error('cliente_nao_aberto');
-      await materializeNeutral();
-      window.pugNeutralCheckoutV1=false;
-      closeModal('clientsModal');
-      baseOpenPayment();
-    }catch(e){ showPugNotice('Não foi possível preparar o pagamento: '+(e?.message||e)); }
-  };
-
-  const statusNodes=document.querySelectorAll('.status');
-  if(statusNodes.length){ statusNodes[0].textContent='Front Office — POS GDR Quinta Nova · LAB V21 + reconciliação funcional 1'; }
-  if(!activeAccount) renderCart();
+  function neutralLineHtml(x){const q=Number(x.quantity||0),unit=Number(x.unit_price||0),line=unit*q;return '<div class="line"><span>'+x.name+'</span><span class="qty"><button onclick="setQty(\'neutral:'+x.product_id+'\','+Math.max(0,q-1)+')">−</button><b>'+q+'x</b><button onclick="setQty(\'neutral:'+x.product_id+'\','+(q+1)+')">+</button></span><span class="line-price"><small>'+euro(unit)+' cada</small><b>'+euro(line)+' total</b></span><button class="delete-line" onclick="setQty(\'neutral:'+x.product_id+'\',0)" aria-label="Eliminar">×</button></div>';}
+  function renderNeutral(){const lineBox=document.getElementById('lines'),totalBox=document.getElementById('total'),payBtn=document.querySelector('.pay-btn'),sub=document.getElementById('accountSub'),bottom=document.getElementById('bottomBar');if(!lineBox||!totalBox||!payBtn)return;lineBox.innerHTML=neutral.length?neutral.map(neutralLineHtml).join(''):'<div class="sub">Conta vazia</div>';const amount=neutralTotal();totalBox.textContent=euro(amount);payBtn.disabled=!neutral.length;payBtn.textContent='RECEBER '+euro(amount);if(bottom)bottom.style.display=neutral.length?'':'none';if(sub&&!activeAccount){sub.classList.toggle('no-account',!neutral.length);sub.textContent=neutral.length?'Cesto sem cliente — destino escolhido no Receber':'Nenhuma conta selecionada';}try{renderAccountMode();}catch(_e){}if(bottom&&neutral.length)bottom.style.display='';}
+  function resetNeutralStatus(){const sub=document.getElementById('accountSub');if(sub&&!activeAccount&&!neutral.length){sub.classList.add('no-account');sub.textContent='Nenhuma conta selecionada';}const bottom=document.getElementById('bottomBar');if(bottom&&!activeAccount&&!neutral.length)bottom.style.display='none';}
+  renderCart=function(){if(!activeAccount&&neutral.length){renderNeutral();return;}baseRenderCart();resetNeutralStatus();};
+  addProduct=async function(id){if(!requireOpenCash())return;if(activeAccount)return baseAddProduct(id);const p=(data?.products||[]).find(function(x){return String(x.id)===String(id);});if(!p){showPugNotice('Produto não encontrado.');return;}let row=neutral.find(function(x){return String(x.product_id)===String(id);});if(row)row.quantity=Number(row.quantity||0)+1;else neutral.push({product_id:p.id,name:p.name,unit_price:Number(p.price||0),quantity:1});activeCategory=null;renderNeutral();showFamilies();renderNeutral();};
+  setQty=async function(id,q){if(String(id).indexOf('neutral:')===0){const productId=String(id).slice(8),idx=neutral.findIndex(function(x){return String(x.product_id)===productId;});if(idx<0)return;const n=Number(q||0);if(n<=0)neutral.splice(idx,1);else neutral[idx].quantity=n;if(neutral.length)renderNeutral();else{baseRenderCart();resetNeutralStatus();}return;}return baseSetQty(id,q);};
+  function showDestination(){window.pugNeutralCheckoutV1=true;pendingProductId=null;clientsTitle.textContent='Onde registar este consumo?';customerSearch.classList.add('hidden');newCustomerName.classList.add('hidden');saveCustomerBtn.classList.add('hidden');customerList.innerHTML='<div class="action-hub"><button class="listbtn" onclick="openCounter()">🧾 <b>Balcão</b><br><small>Venda imediata / cliente ocasional.</small></button><button class="listbtn" onclick="pugNeutralChooseCustomerV1()">👤 <b>Escolher cliente</b><br><small>Procurar um cliente registado.</small></button></div>';const cancel=clientsModal.querySelector('button.cancel');if(cancel)cancel.onclick=function(){window.pugNeutralCheckoutV1=false;closeModal('clientsModal');renderNeutral();};clientsModal.classList.remove('hidden');}
+  window.pugNeutralChooseCustomerV1=function(){openClients('open');clientsTitle.textContent='Escolher cliente';};
+  openPayment=function(){if(!requireOpenCash())return;if(!activeAccount&&neutral.length){showDestination();return;}return baseOpenPayment();};
+  async function materializeNeutral(){if(!activeAccount||!neutral.length)return;const saleId=String(activeAccount.id),items=neutral.map(function(x){return{product_id:x.product_id,quantity:Number(x.quantity||0)};});await rpc('pos_front_add_items_batch',{p_token:token,p_sale:saleId,p_items:items});await load();const fresh=(data.accounts||[]).find(function(a){return String(a.id)===saleId;});if(!fresh)throw new Error('conta_nao_encontrada_apos_cesto');neutral.splice(0,neutral.length);chooseAccount(fresh.id);catalogExpanded=false;renderCart();}
+  openCounter=async function(){if(!window.pugNeutralCheckoutV1)return baseOpenCounter();try{pendingProductId=null;await baseOpenCounter();if(!activeAccount)throw new Error('balcao_nao_aberto');await materializeNeutral();window.pugNeutralCheckoutV1=false;closeModal('clientsModal');baseOpenPayment();}catch(e){showPugNotice('Não foi possível preparar o pagamento: '+(e?.message||e));}};
+  openForCustomer=async function(id){if(!window.pugNeutralCheckoutV1)return baseOpenForCustomer(id);try{pendingProductId=null;await baseOpenForCustomer(id);if(!activeAccount)throw new Error('cliente_nao_aberto');await materializeNeutral();window.pugNeutralCheckoutV1=false;closeModal('clientsModal');baseOpenPayment();}catch(e){showPugNotice('Não foi possível preparar o pagamento: '+(e?.message||e));}};
+  window.pugNeutralRenderV1=renderNeutral;
+  const oldFooterSync=window.pugSyncSaleFooter;
+  window.pugSyncSaleFooter=function(){const bottom=document.getElementById('bottomBar');if(bottom)bottom.style.display=(activeAccount||neutral.length)?'':'none';if(typeof oldFooterSync==='function'&&activeAccount)try{oldFooterSync();}catch(_e){}};
+  const oldShowFamilies=showFamilies;showFamilies=function(){const r=oldShowFamilies.apply(this,arguments);setTimeout(function(){if(!activeAccount&&neutral.length)renderNeutral();else window.pugSyncSaleFooter();},0);return r;};
+  const statusNodes=document.querySelectorAll('.status');if(statusNodes.length)statusNodes[0].textContent='Front Office — POS GDR Quinta Nova · LAB V21 + reconciliação funcional';
+  if(!activeAccount)renderCart();
+})();
+</script><script id="PUG_NATURAL_TENDERS_V26_RECONCILE">
+(function(){
+  let manifestCache=null;
+  async function manifest(){if(manifestCache)return manifestCache;manifestCache=await rpc('pos_front_ui_manifest',{p_token:token});return manifestCache;}
+  function vals(total,cfg){cfg=cfg||{};const out=[],add=function(x){x=Number(Number(x).toFixed(2));if(Number.isFinite(x)&&!out.some(function(y){return Math.abs(y-x)<1e-9;}))out.push(x);};if(cfg.include_exact!==false)add(total);if(cfg.strategy==='natural_tenders_v2'){const base=Math.floor(Number(total)+1e-9),targets=(cfg.rules&&cfg.rules.cent_targets)||[0.1,0.2,0.5];targets.forEach(function(t){const x=base+Number(t);if(x>Number(total)+1e-9)add(x);});const whole=Math.ceil(Number(total)-1e-9);if(whole>Number(total)+1e-9)add(whole);(cfg.denominations||[]).forEach(function(d){const x=Number(d);if(x>Number(total)+1e-9)add(x);});return out.slice(0,cfg.max_suggestions||7);}return out;}
+  async function renderNaturalCash(){const box=document.getElementById('quickCashButtons');if(!box||!activeAccount)return;const m=await manifest(),preset=m?.presets?.cash_quick_values_v1,config=preset?.config||preset||{};const totalValue=Number(activeAccount.total_amount||0),v=vals(totalValue,config);box.innerHTML=v.map(function(x){return '<button type="button" onclick="setCashValue('+Number(x)+')">'+Number(x).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €</button>';}).join('');}
+  renderQuickCash=function(){renderNaturalCash().catch(function(e){console.error('natural_tenders',e);});};
+  const oldOpenPayment=openPayment;openPayment=function(){const r=oldOpenPayment.apply(this,arguments);setTimeout(renderQuickCash,0);return r;};
+  const oldShowCash=showCashPayment;showCashPayment=function(){const r=oldShowCash.apply(this,arguments);renderQuickCash();return r;};
+  window.pugNaturalTenderValuesV26=vals;
 })();
 </script></body></html>
