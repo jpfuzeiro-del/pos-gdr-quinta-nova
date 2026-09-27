@@ -1,0 +1,10 @@
+{
+  "contract": "PUG_M143_GITHUB_WAKE_BUS_R1",
+  "mission_id": 143,
+  "generation": 0,
+  "state": "IDLE",
+  "source": "PUG_SERVER_01",
+  "purpose": "ChatGPT Plus event-triggered Work wake bus",
+  "pc1_dependency": false,
+  "production_effect": false
+}
